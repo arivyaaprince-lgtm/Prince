@@ -35,7 +35,8 @@ A standalone, mobile-friendly Monarch app workspace is available in [app/](app/i
 
 - [Open the app source](app/index.html)
 - [Deployment and feature notes](MONARCH-WEB-APP.md)
+- [Render full-stack deployment blueprint](render.yaml)
 - [GitHub Pages deployment workflow](.github/workflows/deploy-pages.yml)
 - [Check deployment runs](https://github.com/arivyaaprince-lgtm/Prince/actions)
 
-**Deployment note:** GitHub Pages hosts only the frontend. The AI chat needs a separately deployed Node.js backend, a configured provider key in backend secrets, a model setting, and an allowed origin. Configure these using `.env.example` and see [MONARCH-WEB-APP.md](MONARCH-WEB-APP.md). Do not commit real keys. The public site is available only after Pages is enabled and its workflow succeeds; backend deployment and provider credentials have not been verified.
+**Deployment note:** Use the [Render Blueprint](render.yaml) to deploy the frontend and Express API on one host; it still requires a PostgreSQL connection string and provider API key entered as hosting secrets. Read [MONARCH-WEB-APP.md](MONARCH-WEB-APP.md) first. GitHub Pages is an optional static-only deployment and is not the full AI service. No live deployment or provider credentials are implied by this source code.
