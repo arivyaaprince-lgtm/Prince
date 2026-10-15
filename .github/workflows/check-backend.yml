@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - "src/**"
+      - "app/**"
       - "package.json"
       - "tsconfig.json"
       - ".github/workflows/check-backend.yml"
