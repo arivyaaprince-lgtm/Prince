@@ -26,4 +26,15 @@ jobs:
           node-version: 20
       - run: npm install
       - run: npm run typecheck
+      - name: Check inline frontend JavaScript syntax
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+          const html = fs.readFileSync("app/index.html", "utf8");
+          const start = html.indexOf("<script>");
+          const end = html.lastIndexOf("</script>");
+          if (start < 0 || end <= start) throw new Error("No inline frontend script found");
+          new Function(html.slice(start + 8, end));
+          console.log("Inline frontend JavaScript syntax OK");
+          NODE
       - run: npm run build
