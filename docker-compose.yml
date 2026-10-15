@@ -1,0 +1,34 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_URL: "postgresql://monarch:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/monarch"
+      AI_API_KEY: "${AI_API_KEY:-}"
+      AI_BASE_URL: "${AI_BASE_URL:-https://openrouter.ai/api/v1}"
+      AI_MODEL: "${AI_MODEL:-openrouter/free}"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: monarch
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}"
+      POSTGRES_DB: monarch
+    volumes:
+      - monarch_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U monarch -d monarch"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  monarch_pgdata:
