@@ -19,6 +19,7 @@ const allowedOrigins = new Set(
 );
 
 app.disable("x-powered-by");
+if (process.env.NODE_ENV === "production") app.set("trust proxy", 1);
 app.use(helmet({
   // The current single-file frontend intentionally uses inline CSS/JS.
   // Previewed user HTML stays in a sandboxed iframe without same-origin access.
