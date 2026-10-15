@@ -6,6 +6,7 @@ import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { closeDatabase, initializeDatabase } from "./db.js";
 import { currentUser, login, logout, requireAuth, signup } from "./auth.js";
+import { aiChat } from "./ai.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -18,7 +19,7 @@ const allowedOrigins = new Set(
 
 app.disable("x-powered-by");
 app.use(helmet());
-app.use(express.json({ limit: "16kb" }));
+app.use(express.json({ limit: "32kb" }));
 app.use(cookieParser());
 
 app.use((req, res, next) => {
@@ -54,6 +55,15 @@ const authLimiter = rateLimit({
 });
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 12,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Too many AI requests. Please wait a little before trying again." }
+});
+
+app.post("/api/chat", aiLimiter, aiChat);
 app.post("/auth/signup", authLimiter, signup);
 app.post("/auth/login", authLimiter, login);
 app.get("/auth/me", requireAuth, currentUser);
