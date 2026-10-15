@@ -29,7 +29,8 @@ app.use((req, res, next) => {
     if (!origin) return false;
     try { return new URL(origin).host === req.get("host"); } catch { return false; }
   })();
-  const originAllowed = !!origin && (allowedOrigins.has(origin) || sameHostOrigin);\n  if (originAllowed) {
+  const originAllowed = !!origin && (allowedOrigins.has(origin) || sameHostOrigin);
+  if (originAllowed) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Credentials", "true");
     res.setHeader("Vary", "Origin");
@@ -72,7 +73,10 @@ app.post("/api/chat", requireAuth, aiLimiter, aiChat);
 app.post("/auth/signup", authLimiter, signup);
 app.post("/auth/login", authLimiter, login);
 app.get("/auth/me", requireAuth, currentUser);
-app.post("/auth/logout", requireAuth, logout);\n\n// Serve the frontend from the same host as the API when deployed as one app.\napp.use(express.static(resolve(process.cwd(), "app")));
+app.post("/auth/logout", requireAuth, logout);
+
+// Serve the frontend from the same host as the API when deployed as one app.
+app.use(express.static(resolve(process.cwd(), "app")));
 
 const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
   // Do not expose internal errors or secrets to clients.
