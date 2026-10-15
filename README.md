@@ -27,3 +27,15 @@ See docs/AUTHENTICATION.md for components and credential/token handling.
 
 ## Important limitations
 This is a starter, not a complete production identity platform. Email verification, password reset, MFA, OAuth, session/device management, migrations, monitoring, and automated security tests are not implemented yet. Do not launch publicly until these requirements are reviewed and tested. Never commit real secrets.
+
+
+## Monarch browser app
+
+A standalone, mobile-friendly web app workshop is available in [app/](app/index.html). It includes local starter templates, an HTML editor, sandboxed live preview, browser-local save/restore, and HTML/JSON export. It is separate from Princess AI and does not use Floot.
+
+- [Open the app source](app/index.html)
+- [Deployment and feature notes](MONARCH-WEB-APP.md)
+- [GitHub Pages deployment workflow](.github/workflows/deploy-pages.yml)
+- [Check deployment runs](https://github.com/arivyaaprince-lgtm/Prince/actions)
+
+**Deployment note:** The public site is available at [https://arivyaaprince-lgtm.github.io/Prince/](https://arivyaaprince-lgtm.github.io/Prince/) only after GitHub Pages is enabled for this repository and a workflow run succeeds. The current prompt generator uses local templates; no AI model or cloud backend is connected yet.
