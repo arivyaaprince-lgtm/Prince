@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: monarch
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_TOKEN_PEPPER
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: AI_API_KEY
+        sync: false
+      - key: AI_BASE_URL
+        value: https://openrouter.ai/api/v1
+      - key: AI_MODEL
+        value: openrouter/free
+      - key: AI_SITE_URL
+        value: https://arivyaaprince-lgtm.github.io/Prince/
