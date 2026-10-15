@@ -62,10 +62,9 @@ $('loginBtn').onclick=()=>accountAction('login');
 $('signupBtn').onclick=()=>accountAction('signup');
 $('logoutBtn').onclick=async()=>{try{await fetch(backendBase()+'/auth/logout',{method:'POST',credentials:'include'})}catch{}signedIn=false;accountSay('Logged out.');aiSay('Log in to use Monarch AI.')};
 async function checkSession(){try{const response=await fetch(backendBase()+'/auth/me',{credentials:'include',signal:AbortSignal.timeout(10000)});if(response.ok){const data=await response.json();signedIn=true;accountSay('Session active · '+(data.user?.email||'Monarch account'),true)}}catch{}}
-checkSession();
-
 let conversation=[];
 try{apiInput.value=localStorage.getItem('monarch-backend-url')||''}catch{}
+checkSession();
 function aiSay(s,ok=false){aiStatus.textContent=s;aiStatus.className='log '+(ok?'good':'')}
 function drawChat(){chatLog.replaceChildren();for(const m of conversation){const b=document.createElement('div');b.style.cssText='padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:'+(m.role==='user'?'#17251c':'#111925')+';white-space:pre-wrap;overflow-wrap:anywhere';const label=document.createElement('b');label.textContent=m.role==='user'?'You':'Monarch';label.style.display='block';label.style.marginBottom='4px';const text=document.createElement('div');text.textContent=m.content;b.append(label,text);chatLog.append(b)}chatLog.scrollTop=chatLog.scrollHeight}
 $('saveApi').onclick=()=>{let value=apiInput.value.trim().replace(/\/+$/,'');if(value&&!/^https?:\/\//i.test(value)){aiSay('Backend URL must start with https:// (or http:// for local development).');return}try{localStorage.setItem('monarch-backend-url',value)}catch{}apiInput.value=value;aiSay(value?'Backend URL saved on this device.':'Backend URL cleared.',true)};
