@@ -3,7 +3,7 @@
 Monarch is a standalone mobile-friendly app workspace in `app/`, separate from Princess AI and not dependent on Floot.
 
 ## Features in this version
-- Local starter templates, HTML editing, sandboxed live preview, browser-local save/restore, HTML download, and project JSON export.
+- Local starter templates, AI-generated single-file HTML apps, HTML editing, sandboxed live preview, browser-local save/restore, HTML download, and project JSON export.
 - Monarch AI chat connected to the backend endpoint `POST /api/chat`.
 - Email/password signup, login, session check, and logout using the existing PostgreSQL-backed auth starter.
 - OpenAI-compatible chat-completions provider support (the example defaults to OpenRouter).
@@ -30,4 +30,4 @@ The blueprint uses Render's free web-service plan where available; free services
 ## Architecture and limits
 GitHub Pages can host only the static frontend; it cannot run Express or protect provider secrets. The Render blueprint serves the frontend and API together. The existing Express server initializes PostgreSQL and validates `SESSION_TOKEN_PEPPER` at startup. AI chat requires a signed-in account and is rate-limited, but add account-level quotas and provider spend monitoring before a public launch.
 
-The code has been committed, but I cannot claim a live AI service until you supply provider/database credentials through their hosting dashboards and a deployment succeeds.
+The source code is committed and the backend TypeScript build has passed CI. AI generation still needs a successful hosting deployment plus provider/database credentials entered through their hosting dashboards; no live AI service is claimed until that is verified.
