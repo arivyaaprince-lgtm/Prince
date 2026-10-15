@@ -6,7 +6,9 @@ if (!connectionString) throw new Error("DATABASE_URL must be configured");
 
 export const pool = new Pool({
   connectionString,
-  ssl: process.env.PGSSLMODE === "require" ? { rejectUnauthorized: true } : undefined,
+  // Render's managed Postgres may present a self-signed certificate.
+  // Keep TLS encryption enabled while allowing that certificate.
+  ssl: process.env.PGSSLMODE === "require" ? { rejectUnauthorized: false } : undefined,
   max: 10,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 5_000
