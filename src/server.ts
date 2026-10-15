@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express, { type ErrorRequestHandler } from "express";
+import { resolve } from "node:path";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -24,7 +25,7 @@ app.use(cookieParser());
 
 app.use((req, res, next) => {
   const origin = req.get("Origin");
-  if (origin && allowedOrigins.has(origin)) {
+  const sameHostOrigin = (() => {\n    if (!origin) return false;\n    try { return new URL(origin).host === req.get("host"); } catch { return false; }\n  })();\n  const originAllowed = !!origin && (allowedOrigins.has(origin) || sameHostOrigin);\n  if (originAllowed) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Credentials", "true");
     res.setHeader("Vary", "Origin");
@@ -39,7 +40,7 @@ app.use((req, res, next) => {
     res.status(204).end();
     return;
   }
-  if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method) && origin && !allowedOrigins.has(origin)) {
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method) && origin && !originAllowed) {
     res.status(403).json({ error: "Origin not allowed." });
     return;
   }
@@ -67,7 +68,7 @@ app.post("/api/chat", requireAuth, aiLimiter, aiChat);
 app.post("/auth/signup", authLimiter, signup);
 app.post("/auth/login", authLimiter, login);
 app.get("/auth/me", requireAuth, currentUser);
-app.post("/auth/logout", requireAuth, logout);
+app.post("/auth/logout", requireAuth, logout);\n\n// Serve the frontend from the same host as the API when deployed as one app.\napp.use(express.static(resolve(process.cwd(), "app")));
 
 const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
   // Do not expose internal errors or secrets to clients.
