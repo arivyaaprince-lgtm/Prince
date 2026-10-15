@@ -24,7 +24,7 @@ declare global {
 }
 
 function digestToken(token: string): string {
-  return createHash("sha256").update(token).update(pepper).digest("hex");
+  return createHash("sha256").update(token).update(pepper!).digest("hex");
 }
 
 function cookieOptions() {
