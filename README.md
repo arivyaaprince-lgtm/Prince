@@ -31,11 +31,11 @@ This is a starter, not a complete production identity platform. Email verificati
 
 ## Monarch browser app
 
-A standalone, mobile-friendly web app workshop is available in [app/](app/index.html). It includes local starter templates, an HTML editor, sandboxed live preview, browser-local save/restore, and HTML/JSON export. It is separate from Princess AI and does not use Floot.
+A standalone, mobile-friendly Monarch app workspace is available in [app/](app/index.html). It includes local starter templates, an HTML editor, sandboxed live preview, browser-local save/restore, HTML/JSON export, and an AI chat UI backed by the Express endpoint `POST /api/chat`. It is separate from Princess AI and does not use Floot.
 
 - [Open the app source](app/index.html)
 - [Deployment and feature notes](MONARCH-WEB-APP.md)
 - [GitHub Pages deployment workflow](.github/workflows/deploy-pages.yml)
 - [Check deployment runs](https://github.com/arivyaaprince-lgtm/Prince/actions)
 
-**Deployment note:** The public site is available at [https://arivyaaprince-lgtm.github.io/Prince/](https://arivyaaprince-lgtm.github.io/Prince/) only after GitHub Pages is enabled for this repository and a workflow run succeeds. The current prompt generator uses local templates; no AI model or cloud backend is connected yet.
+**Deployment note:** GitHub Pages hosts only the frontend. The AI chat needs a separately deployed Node.js backend, a configured provider key in backend secrets, a model setting, and an allowed origin. Configure these using `.env.example` and see [MONARCH-WEB-APP.md](MONARCH-WEB-APP.md). Do not commit real keys. The public site is available only after Pages is enabled and its workflow succeeds; backend deployment and provider credentials have not been verified.
