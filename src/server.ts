@@ -25,7 +25,11 @@ app.use(cookieParser());
 
 app.use((req, res, next) => {
   const origin = req.get("Origin");
-  const sameHostOrigin = (() => {\n    if (!origin) return false;\n    try { return new URL(origin).host === req.get("host"); } catch { return false; }\n  })();\n  const originAllowed = !!origin && (allowedOrigins.has(origin) || sameHostOrigin);\n  if (originAllowed) {
+  const sameHostOrigin = (() => {
+    if (!origin) return false;
+    try { return new URL(origin).host === req.get("host"); } catch { return false; }
+  })();
+  const originAllowed = !!origin && (allowedOrigins.has(origin) || sameHostOrigin);\n  if (originAllowed) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Credentials", "true");
     res.setHeader("Vary", "Origin");
