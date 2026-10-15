@@ -4,7 +4,7 @@ Monarch is a standalone mobile-friendly app workspace in `app/`, separate from P
 
 ## Features in this version
 - Local starter templates, AI-generated single-file HTML apps, HTML editing, sandboxed live preview, browser-local save/restore, HTML download, and project JSON export.
-- Monarch AI chat connected to the backend endpoint `POST /api/chat`.
+- Monarch AI chat connected to `POST /api/chat`, with account-scoped PostgreSQL conversation storage and a `GET /api/chat/history/latest` restore endpoint.
 - Email/password signup, login, session check, and logout using the existing PostgreSQL-backed auth starter.
 - OpenAI-compatible chat-completions provider support (the example defaults to OpenRouter).
 - Input validation, bounded conversation size, a 45-second upstream timeout, sanitized provider errors, and rate limiting.

@@ -1,12 +1,16 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
+import { pool } from "./db.js";
 
 const messageSchema = z.object({
   role: z.enum(["user", "assistant"]),
   content: z.string().trim().min(1).max(8000)
 });
 const chatSchema = z.object({
-  messages: z.array(messageSchema).min(1).max(20)
+  messages: z.array(messageSchema).min(1).max(20),
+  conversationId: z.string().uuid().optional(),
+  messageId: z.string().min(8).max(100).optional(),
+  persist: z.boolean().optional()
 }).superRefine((value, ctx) => {
   const total = value.messages.reduce((sum, item) => sum + item.content.length, 0);
   if (total > 24000) ctx.addIssue({ code: "custom", message: "Conversation is too long." });
@@ -17,10 +21,49 @@ const chatSchema = z.object({
 
 const timeoutMs = 45_000;
 
+export async function getLatestChatHistory(req: Request, res: Response): Promise<void> {
+  const userId = req.authUser?.id;
+  if (!userId) {
+    res.status(401).json({ error: "Authentication required." });
+    return;
+  }
+  try {
+    const result = await pool.query<{ conversation_id: string; role: "user" | "assistant"; content: string }>(
+      `WITH latest AS (
+         SELECT conversation_id FROM monarch_chat_messages
+         WHERE user_id = $1 ORDER BY id DESC LIMIT 1
+       )
+       SELECT m.conversation_id, m.role, m.content
+       FROM monarch_chat_messages m
+       JOIN latest l ON l.conversation_id = m.conversation_id
+       WHERE m.user_id = $1
+       ORDER BY m.id DESC LIMIT 40`,
+      [userId]
+    );
+    const rows = result.rows.reverse();
+    res.json({
+      conversationId: rows[0]?.conversation_id ?? null,
+      messages: rows.map(({ role, content }) => ({ role, content }))
+    });
+  } catch {
+    res.status(500).json({ error: "Could not load saved chat history." });
+  }
+}
+
 export async function aiChat(req: Request, res: Response): Promise<void> {
   const parsed = chatSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Send 1–20 valid chat messages, with a maximum of 24,000 characters total." });
+    return;
+  }
+
+  const userId = req.authUser?.id;
+  const conversationId = parsed.data.conversationId;
+  const messageId = parsed.data.messageId;
+  const persist = parsed.data.persist === true;
+  const submittedMessages = parsed.data.messages;
+  if (persist && (!userId || !conversationId || !messageId)) {
+    res.status(400).json({ error: "Persistent chat requires an authenticated user, conversation ID, and message ID." });
     return;
   }
 
@@ -37,6 +80,31 @@ export async function aiChat(req: Request, res: Response): Promise<void> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
+    let messages = submittedMessages;
+    if (persist && userId && conversationId && messageId) {
+      // Idempotently save the new user turn before calling the provider.
+      await pool.query(
+        `INSERT INTO monarch_chat_messages (user_id, conversation_id, message_id, role, content)
+         VALUES ($1, $2, $3, 'user', $4)
+         ON CONFLICT (user_id, conversation_id, message_id, role) DO NOTHING`,
+        [userId, conversationId, messageId, submittedMessages[submittedMessages.length - 1].content]
+      );
+      const history = await (await import("./db.js")).pool.query<{ role: "user" | "assistant"; content: string }>(
+        `SELECT role, content FROM (
+           SELECT id, role, content FROM monarch_chat_messages
+           WHERE user_id = $1 AND conversation_id = $2
+           ORDER BY id DESC LIMIT 20
+         ) recent ORDER BY id ASC`,
+        [userId, conversationId]
+      );
+      const last = history.rows[history.rows.length - 1];
+      if (!last || last.role !== "user" || last.content !== submittedMessages[submittedMessages.length - 1].content) {
+        res.status(409).json({ error: "Could not restore this conversation. Start a new chat and try again." });
+        return;
+      }
+      messages = history.rows;
+    }
+
     const upstream = await fetch(baseUrl + "/chat/completions", {
       method: "POST",
       headers: {
@@ -52,7 +120,7 @@ export async function aiChat(req: Request, res: Response): Promise<void> {
             role: "system",
             content: "You are Monarch, a helpful AI assistant and practical software-building partner. Be truthful about capabilities. For code tasks, provide complete, runnable examples when appropriate, explain where files belong, and prioritize safe, maintainable solutions. Never claim you deployed, executed, or tested code unless that actually happened. Do not reveal secrets or request users to paste API keys into chat."
           },
-          ...parsed.data.messages
+          ...messages
         ],
         temperature: 0.4,
         max_tokens: 4500
@@ -93,7 +161,16 @@ export async function aiChat(req: Request, res: Response): Promise<void> {
       res.status(502).json({ error: "The AI provider returned an empty response. Please try again." });
       return;
     }
-    res.json({ answer: answer.slice(0, 16000), model });
+    const safeAnswer = answer.slice(0, 16000);
+    if (persist && userId && conversationId && messageId) {
+      await (await import("./db.js")).pool.query(
+        `INSERT INTO monarch_chat_messages (user_id, conversation_id, message_id, role, content)
+         VALUES ($1, $2, $3, 'assistant', $4)
+         ON CONFLICT (user_id, conversation_id, message_id, role) DO NOTHING`,
+        [userId, conversationId, messageId, safeAnswer]
+      );
+    }
+    res.json({ answer: safeAnswer, model });
   } catch (error) {
     const timedOut = error instanceof Error && error.name === "AbortError";
     console.error("AI request failed", timedOut ? "timeout" : error instanceof Error ? error.message : "unknown error");
