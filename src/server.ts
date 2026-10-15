@@ -63,7 +63,7 @@ const aiLimiter = rateLimit({
   message: { error: "Too many AI requests. Please wait a little before trying again." }
 });
 
-app.post("/api/chat", aiLimiter, aiChat);
+app.post("/api/chat", requireAuth, aiLimiter, aiChat);
 app.post("/auth/signup", authLimiter, signup);
 app.post("/auth/login", authLimiter, login);
 app.get("/auth/me", requireAuth, currentUser);
