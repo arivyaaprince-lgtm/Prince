@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
+import { pool } from "./db.js";
 
 const messageSchema = z.object({
   role: z.enum(["user", "assistant"]),
@@ -19,6 +20,35 @@ const chatSchema = z.object({
 });
 
 const timeoutMs = 45_000;
+
+export async function getLatestChatHistory(req: Request, res: Response): Promise<void> {
+  const userId = req.authUser?.id;
+  if (!userId) {
+    res.status(401).json({ error: "Authentication required." });
+    return;
+  }
+  try {
+    const result = await pool.query<{ conversation_id: string; role: "user" | "assistant"; content: string }>(
+      `WITH latest AS (
+         SELECT conversation_id FROM monarch_chat_messages
+         WHERE user_id = $1 ORDER BY id DESC LIMIT 1
+       )
+       SELECT m.conversation_id, m.role, m.content
+       FROM monarch_chat_messages m
+       JOIN latest l ON l.conversation_id = m.conversation_id
+       WHERE m.user_id = $1
+       ORDER BY m.id DESC LIMIT 40`,
+      [userId]
+    );
+    const rows = result.rows.reverse();
+    res.json({
+      conversationId: rows[0]?.conversation_id ?? null,
+      messages: rows.map(({ role, content }) => ({ role, content }))
+    });
+  } catch {
+    res.status(500).json({ error: "Could not load saved chat history." });
+  }
+}
 
 export async function aiChat(req: Request, res: Response): Promise<void> {
   const parsed = chatSchema.safeParse(req.body);
@@ -53,7 +83,7 @@ export async function aiChat(req: Request, res: Response): Promise<void> {
     let messages = submittedMessages;
     if (persist && userId && conversationId && messageId) {
       // Idempotently save the new user turn before calling the provider.
-      await (await import("./db.js")).pool.query(
+      await pool.query(
         `INSERT INTO monarch_chat_messages (user_id, conversation_id, message_id, role, content)
          VALUES ($1, $2, $3, 'user', $4)
          ON CONFLICT (user_id, conversation_id, message_id, role) DO NOTHING`,
