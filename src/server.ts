@@ -5,7 +5,7 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
-import { closeDatabase, initializeDatabase } from "./db.js";
+import { closeDatabase, initializeDatabase, pool } from "./db.js";
 import { currentUser, login, logout, requireAuth, signup } from "./auth.js";
 import { aiChat, getLatestChatHistory } from "./ai.js";
 
@@ -77,7 +77,15 @@ const authLimiter = rateLimit({
   message: { error: "Too many authentication attempts. Try again later." }
 });
 
-app.get("/health", (_req, res) => res.json({ status: "ok" }));
+// A successful health check now means the database is reachable too.
+app.get("/health", async (_req, res) => {
+  try {
+    await pool.query("SELECT 1");
+    res.json({ status: "ok", database: "connected" });
+  } catch {
+    res.status(503).json({ status: "unavailable", database: "disconnected" });
+  }
+});
 const aiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 12,
