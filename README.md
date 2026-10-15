@@ -31,7 +31,7 @@ This is a starter, not a complete production identity platform. Email verificati
 
 ## Monarch browser app
 
-A standalone, mobile-friendly Monarch app workspace is available in [app/](app/index.html). It includes local starter templates, an HTML editor, sandboxed live preview, browser-local save/restore, HTML/JSON export, and an AI chat UI backed by the Express endpoint `POST /api/chat`. It is separate from Princess AI and does not use Floot.
+A standalone, mobile-friendly Monarch app workspace is available in [app/](app/index.html). It includes local starter templates, AI-powered single-file app generation, an HTML editor, sandboxed live preview, browser-local save/restore, HTML/JSON export, and AI chat backed by the Express endpoint `POST /api/chat`. It is separate from Princess AI and does not use Floot.
 
 - [Open the app source](app/index.html)
 - [Deployment and feature notes](MONARCH-WEB-APP.md)
