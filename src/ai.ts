@@ -55,7 +55,7 @@ export async function aiChat(req: Request, res: Response): Promise<void> {
           ...parsed.data.messages
         ],
         temperature: 0.4,
-        max_tokens: 1800
+        max_tokens: 4500
       }),
       signal: controller.signal
     });
