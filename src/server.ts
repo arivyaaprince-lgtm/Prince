@@ -7,7 +7,7 @@ import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { closeDatabase, initializeDatabase } from "./db.js";
 import { currentUser, login, logout, requireAuth, signup } from "./auth.js";
-import { aiChat } from "./ai.js";
+import { aiChat, getLatestChatHistory } from "./ai.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -87,6 +87,7 @@ const aiLimiter = rateLimit({
 });
 
 app.post("/api/chat", requireAuth, aiLimiter, aiChat);
+app.get("/api/chat/history/latest", requireAuth, getLatestChatHistory);
 app.post("/auth/signup", authLimiter, signup);
 app.post("/auth/login", authLimiter, login);
 app.get("/auth/me", requireAuth, currentUser);
