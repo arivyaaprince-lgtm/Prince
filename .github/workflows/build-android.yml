@@ -74,27 +74,34 @@ jobs:
           mkdir -p dist
           cp mobile/android/app/build/outputs/apk/debug/app-debug.apk dist/Monarch-debug.apk
           test -s dist/Monarch-debug.apk
+          cd dist
+          zip -j Monarch-Android.zip Monarch-debug.apk
+          test -s Monarch-Android.zip
 
-      - name: Upload APK artifact
+      - name: Upload APK and ZIP artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Monarch-Android-APK
-          path: dist/Monarch-debug.apk
+          name: Monarch-Android-Downloads
+          path: |
+            dist/Monarch-debug.apk
+            dist/Monarch-Android.zip
           if-no-files-found: error
           retention-days: 30
 
-      - name: Publish latest APK download
+      - name: Publish latest APK and ZIP downloads
         uses: softprops/action-gh-release@v2
         with:
           tag_name: monarch-android-latest
           name: Monarch for Android
           body: |
-            Monarch Android debug APK.
-            
+            Monarch Android debug APK and a ZIP-wrapped copy as an alternative download route.
+
             Local project creation, editing, preview, browser-local saving, and export are bundled in the app and do not need Render.
             Online AI chat remains optional and requires a separately configured compatible backend.
-            
+
             This APK is for direct testing and is not a Play Store release.
-          files: dist/Monarch-debug.apk
+          files: |
+            dist/Monarch-debug.apk
+            dist/Monarch-Android.zip
           overwrite_files: true
           make_latest: false
