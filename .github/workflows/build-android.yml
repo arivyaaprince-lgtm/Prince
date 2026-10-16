@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   build-android:
-    name: Build installable Monarch APK
+    name: Build and verify installable Monarch APK
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -49,7 +49,7 @@ jobs:
           test -f app/index.html
           mkdir -p mobile/www
           cp -R app/. mobile/www/
-          test -f mobile/www/index.html
+          test -s mobile/www/index.html
 
       - name: Install Capacitor dependencies
         working-directory: mobile
@@ -63,45 +63,74 @@ jobs:
         working-directory: mobile
         run: npx cap sync android
 
-      - name: Build debug APK
+      - name: Build release variant
         working-directory: mobile/android
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon assembleDebug
+          ./gradlew --no-daemon assembleRelease
 
-      - name: Stage and verify APK
+      - name: Sign and verify installable APK
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: |
-          mkdir -p dist
-          cp mobile/android/app/build/outputs/apk/debug/app-debug.apk dist/Monarch-debug.apk
-          test -s dist/Monarch-debug.apk
-          cd dist
-          zip -j Monarch-Android.zip Monarch-debug.apk
-          test -s Monarch-Android.zip
+          set -euo pipefail
+          APK="mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk"
+          if [ ! -s "$APK" ]; then
+            APK="mobile/android/app/build/outputs/apk/release/app-release.apk"
+          fi
+          test -s "$APK"
+          mkdir -p dist signing
+          if [ -n "${RELEASE_KEYSTORE_BASE64:-}" ] && [ -n "${RELEASE_KEYSTORE_PASSWORD:-}" ] && [ -n "${RELEASE_KEY_ALIAS:-}" ] && [ -n "${RELEASE_KEY_PASSWORD:-}" ]; then
+            echo "$RELEASE_KEYSTORE_BASE64" | base64 --decode > signing/release.jks
+            KEYSTORE_PASSWORD="$RELEASE_KEYSTORE_PASSWORD"
+            KEY_ALIAS="$RELEASE_KEY_ALIAS"
+            KEY_PASSWORD="$RELEASE_KEY_PASSWORD"
+            echo "Using configured persistent release signing key."
+          else
+            echo "::warning::No persistent release signing secrets configured. Generating a temporary key; this APK is installable, but future builds may not update it in place."
+            keytool -genkeypair -v -keystore signing/temporary-release.jks -storepass monarch-temp-pass -keypass monarch-temp-pass -alias monarch -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Monarch App, OU=Android, O=Monarch, L=Unknown, ST=Unknown, C=IN"
+            mv signing/temporary-release.jks signing/release.jks
+            KEYSTORE_PASSWORD="monarch-temp-pass"
+            KEY_ALIAS="monarch"
+            KEY_PASSWORD="monarch-temp-pass"
+          fi
+          BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.0"
+          "$BUILD_TOOLS/zipalign" -f -p 4 "$APK" dist/Monarch-aligned.apk
+          "$BUILD_TOOLS/apksigner" sign --ks signing/release.jks --ks-key-alias "$KEY_ALIAS" --ks-pass "pass:$KEYSTORE_PASSWORD" --key-pass "pass:$KEY_PASSWORD" --out dist/Monarch.apk dist/Monarch-aligned.apk
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs dist/Monarch.apk
+          "$BUILD_TOOLS/aapt" dump badging dist/Monarch.apk | tee dist/apk-metadata.txt
+          grep -q "^package:" dist/apk-metadata.txt
+          test -s dist/Monarch.apk
+          sha256sum dist/Monarch.apk | tee dist/SHA256SUMS.txt
+          rm -f dist/Monarch-aligned.apk
 
-      - name: Upload APK and ZIP artifacts
+      - name: Upload direct APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Monarch-Android-Downloads
+          name: Monarch-APK
           path: |
-            dist/Monarch-debug.apk
-            dist/Monarch-Android.zip
+            dist/Monarch.apk
+            dist/SHA256SUMS.txt
+            dist/apk-metadata.txt
           if-no-files-found: error
           retention-days: 30
 
-      - name: Publish latest APK and ZIP downloads
+      - name: Publish direct APK download
         uses: softprops/action-gh-release@v2
         with:
           tag_name: monarch-android-latest
           name: Monarch for Android
           body: |
-            Monarch Android debug APK and a ZIP-wrapped copy as an alternative download route.
+            Direct installable Monarch APK. The workflow builds the release variant, aligns it, signs it, verifies the APK signature, and checks Android package metadata.
 
-            Local project creation, editing, preview, browser-local saving, and export are bundled in the app and do not need Render.
-            Online AI chat remains optional and requires a separately configured compatible backend.
+            Local project creation, editing, preview, browser-local saving, and export are bundled in the app and do not need Render. Online AI chat remains optional and requires a separately configured compatible backend.
 
-            This APK is for direct testing and is not a Play Store release.
+            For persistent in-place updates, configure RELEASE_KEYSTORE_BASE64, RELEASE_KEYSTORE_PASSWORD, RELEASE_KEY_ALIAS, and RELEASE_KEY_PASSWORD repository Actions secrets with your own long-term signing key. If those are absent, the workflow creates a temporary signing key for this build.
           files: |
-            dist/Monarch-debug.apk
-            dist/Monarch-Android.zip
+            dist/Monarch.apk
+            dist/SHA256SUMS.txt
           overwrite_files: true
           make_latest: false
