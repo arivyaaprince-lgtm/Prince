@@ -1,0 +1,17 @@
+{
+  "name": "monarch-android-shell",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Android wrapper for Monarch's local-first app workspace",
+  "scripts": {
+    "sync:android": "cap sync android",
+    "build:android": "cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/core": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3"
+  }
+}
