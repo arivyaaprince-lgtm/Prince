@@ -9,6 +9,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: APP_ORIGINS
+        value: https://arivyaaprince-lgtm.github.io
       - key: SESSION_TOKEN_PEPPER
         generateValue: true
       - key: DATABASE_URL
