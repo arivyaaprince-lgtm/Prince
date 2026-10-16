@@ -16,7 +16,7 @@ import android.widget.Toast
 
 class MainActivity : Activity() {
     private lateinit var webView: WebView
-    private val appUrl = "https://arivyaaprince-lgtm.github.io/Prince/app/"
+    private val appUrl = "https://monarch-prince.floot.app"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,7 +32,7 @@ class MainActivity : Activity() {
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                 val url = request?.url ?: return false
-                return !(url.scheme == "https" && url.host == "arivyaaprince-lgtm.github.io")
+                return !(url.scheme == "https" && url.host == "monarch-prince.floot.app")
             }
         }
         webView.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
