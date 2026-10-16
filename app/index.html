@@ -67,7 +67,7 @@ const makeId=()=>typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUI
 let conversationId='';
 try{conversationId=localStorage.getItem('monarch-conversation-id-v1')||'';if(!/^[0-9a-f-]{36}$/i.test(conversationId))conversationId='';if(!conversationId){conversationId=makeId();localStorage.setItem('monarch-conversation-id-v1',conversationId)}}catch{conversationId=makeId()}
 try{const saved=JSON.parse(localStorage.getItem('monarch-chat-v1')||'[]');if(Array.isArray(saved))conversation=saved.filter(m=>m&&['user','assistant'].includes(m.role)&&typeof m.content==='string').slice(-40)}catch{}
-try{apiInput.value=localStorage.getItem('monarch-backend-url')||''}catch{}
+try{const savedBackend=localStorage.getItem('monarch-backend-url')||'';apiInput.value=/\.onrender\.com\/?$/i.test(savedBackend)?'':savedBackend;if(!apiInput.value&&savedBackend){} }catch{apiInput.value=''}
 checkSession();
 drawChat();
 function aiSay(s,ok=false){aiStatus.textContent=s;aiStatus.className='log '+(ok?'good':'')}
