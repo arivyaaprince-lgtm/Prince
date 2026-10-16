@@ -86,6 +86,68 @@ app.get("/health", async (_req, res) => {
     res.status(503).json({ status: "unavailable", database: "disconnected" });
   }
 });
+
+// Read-only, fixed-target diagnostic: this checks the published Princess AI page,
+// not its private chat endpoint, provider credentials, or runtime logs.
+const princessDiagnosticsLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { error: "Too many diagnostic checks. Wait a minute and try again." }
+});
+app.get("/api/diagnostics/princess", princessDiagnosticsLimiter, async (_req, res) => {
+  const target = "https://princess-ai.floot.app/";
+  const startedAt = Date.now();
+  const checkedAt = () => new Date().toISOString();
+  try {
+    const response = await fetch(target, {
+      redirect: "follow",
+      signal: AbortSignal.timeout(8000),
+      headers: { "User-Agent": "Monarch-Princess-Diagnostics/1.0" }
+    });
+    const contentType = response.headers.get("content-type") ?? "unknown";
+    let title: string | null = null;
+    let appShell = false;
+    if (contentType.toLowerCase().includes("text/html")) {
+      const html = await response.text();
+      title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]
+        ?.replace(/\s+/g, " ").trim().slice(0, 120) ?? null;
+      appShell = /<html[\s>]/i.test(html) && /<body[\s>]/i.test(html);
+    }
+    res.setHeader("Cache-Control", "no-store");
+    res.status(200).json({
+      target,
+      networkReachable: true,
+      httpOk: response.ok,
+      httpStatus: response.status,
+      contentType,
+      latencyMs: Date.now() - startedAt,
+      title,
+      appShell,
+      checkedAt: checkedAt(),
+      note: "This checks only the published page. It does not verify chat requests, AI provider credentials, or the app's private runtime logs."
+    });
+  } catch (error) {
+    res.setHeader("Cache-Control", "no-store");
+    res.status(200).json({
+      target,
+      networkReachable: false,
+      httpOk: false,
+      httpStatus: null,
+      contentType: null,
+      latencyMs: Date.now() - startedAt,
+      title: null,
+      appShell: false,
+      checkedAt: checkedAt(),
+      error: error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")
+        ? "Timed out while checking the published page."
+        : "Monarch could not reach the published page from its server.",
+      note: "This checks only the published page. A failed check does not by itself prove the chat API is broken."
+    });
+  }
+});
+
 const aiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 12,
