@@ -10,12 +10,17 @@ on:
       - ".github/workflows/build-android.yml"
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: monarch-android-apk
+  cancel-in-progress: true
 
 jobs:
   build-android:
+    name: Build installable Monarch APK
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -34,25 +39,54 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Prepare web assets
+      - name: Install Android SDK packages
+        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Prepare local-first web assets and Capacitor
         run: |
+          test -f app/index.html
           mkdir -p www
           cp -R app/. www/
-          npm install --no-save @capacitor/cli @capacitor/core @capacitor/android
+          npm install --no-save @capacitor/cli@^7.4.3 @capacitor/core@^7.4.3 @capacitor/android@^7.4.3
 
-      - name: Create Android project
+      - name: Generate Android project
         run: npx cap add android
+
+      - name: Sync packaged assets
+        run: npx cap sync android
 
       - name: Build debug APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew --no-daemon assembleDebug
 
-      - name: Upload installable APK
+      - name: Stage and verify APK
+        run: |
+          mkdir -p dist
+          cp android/app/build/outputs/apk/debug/app-debug.apk dist/Monarch-debug.apk
+          test -s dist/Monarch-debug.apk
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: monarch-android-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: Monarch-Android-APK
+          path: dist/Monarch-debug.apk
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
+
+      - name: Publish latest APK download
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: monarch-android-latest
+          name: Monarch for Android
+          body: |
+            Monarch Android debug APK.
+            
+            Local project creation, editing, preview, browser-local saving, and export are bundled in the app and do not need Render.
+            Online AI chat remains optional and requires a separately configured compatible backend.
+            
+            This APK is for direct testing and is not a Play Store release.
+          files: dist/Monarch-debug.apk
+          overwrite_files: true
+          make_latest: false
