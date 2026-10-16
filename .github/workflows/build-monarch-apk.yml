@@ -1,4 +1,5 @@
 name: Build Monarch Android APK
+run-name: Build Monarch APK for production cloud app
 
 on:
   push:
