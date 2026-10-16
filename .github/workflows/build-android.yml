@@ -6,7 +6,7 @@ on:
     branches: [main]
     paths:
       - "app/**"
-      - "capacitor.config.json"
+      - "mobile/**"
       - ".github/workflows/build-android.yml"
 
 permissions:
@@ -29,6 +29,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: npm
+          cache-dependency-path: mobile/package.json
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -42,29 +44,35 @@ jobs:
       - name: Install Android SDK packages
         run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Prepare local-first web assets and Capacitor
+      - name: Prepare local-first web assets
         run: |
           test -f app/index.html
-          mkdir -p www
-          cp -R app/. www/
-          npm install --no-save @capacitor/cli@^7.4.3 @capacitor/core@^7.4.3 @capacitor/android@^7.4.3
+          mkdir -p mobile/www
+          cp -R app/. mobile/www/
+          test -f mobile/www/index.html
+
+      - name: Install Capacitor dependencies
+        working-directory: mobile
+        run: npm install
 
       - name: Generate Android project
+        working-directory: mobile
         run: npx cap add android
 
       - name: Sync packaged assets
+        working-directory: mobile
         run: npx cap sync android
 
       - name: Build debug APK
+        working-directory: mobile/android
         run: |
-          cd android
           chmod +x gradlew
           ./gradlew --no-daemon assembleDebug
 
       - name: Stage and verify APK
         run: |
           mkdir -p dist
-          cp android/app/build/outputs/apk/debug/app-debug.apk dist/Monarch-debug.apk
+          cp mobile/android/app/build/outputs/apk/debug/app-debug.apk dist/Monarch-debug.apk
           test -s dist/Monarch-debug.apk
 
       - name: Upload APK artifact
