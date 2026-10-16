@@ -12,7 +12,8 @@ import android.view.WindowManager;
 
 public class MainActivity extends Activity {
     private WebView webView;
-    private static final String APP_URL = "https://arivyaaprince-lgtm.github.io/Prince/";
+    // The simple mobile interface is the default entry point.
+    private static final String APP_URL = "https://arivyaaprince-lgtm.github.io/Prince/easy.html";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -23,7 +24,6 @@ public class MainActivity extends Activity {
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
-        settings.setDatabaseEnabled(true);
         settings.setLoadsImagesAutomatically(true);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
