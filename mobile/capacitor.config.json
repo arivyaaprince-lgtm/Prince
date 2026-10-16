@@ -1,0 +1,9 @@
+{
+  "appId": "com.prince.monarch",
+  "appName": "Monarch",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": false
+  }
+}
