@@ -13,7 +13,7 @@ import android.view.Window;
 import android.view.WindowManager;
 
 public class MainActivity extends Activity {
-    private static final String ONLINE_URL = "https://arivyaaprince-lgtm.github.io/Prince/easy.html";
+    private static final String ONLINE_URL = "https://monarch-prince.floot.app/chat";
     private static final String OFFLINE_URL = "file:///android_asset/easy.html";
     private WebView webView;
     private boolean usingOfflineFallback = false;
