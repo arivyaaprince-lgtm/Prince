@@ -1,5 +1,5 @@
-name: Build Monarch Android APK
-run-name: Build Monarch APK for production cloud app
+name: Build Monarch Android release
+run-name: Build Monarch release APK
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -27,13 +27,24 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Build debug APK
-        run: gradle --no-daemon :app:assembleDebug
+      - name: Build release APK
+        run: gradle --no-daemon :app:assembleRelease
         working-directory: android
-      - name: Upload APK
+      - name: Prepare direct download
+        run: cp android/app/build/outputs/apk/release/app-release.apk Monarch.apk
+      - name: Publish APK as a GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="monarch-v${{ github.run_number }}"
+          gh release create "$TAG" Monarch.apk \
+            --repo "${{ github.repository }}" \
+            --title "Monarch Android ${{ github.run_number }}" \
+            --notes "Installable Android release APK for Monarch. Built from commit ${{ github.sha }}."
+      - name: Keep APK artifact as a backup
         uses: actions/upload-artifact@v4
         with:
-          name: monarch-android-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: monarch-release-apk
+          path: Monarch.apk
           if-no-files-found: error
           retention-days: 30
