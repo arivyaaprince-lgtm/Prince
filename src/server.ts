@@ -8,6 +8,7 @@ import { z } from "zod";
 import { closeDatabase, initializeDatabase, pool } from "./db.js";
 import { currentUser, login, logout, requireAuth, signup } from "./auth.js";
 import { aiChat, getLatestChatHistory } from "./ai.js";
+import { buildApp } from "./builder.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -157,6 +158,7 @@ const aiLimiter = rateLimit({
 });
 
 app.post("/api/chat", requireAuth, aiLimiter, aiChat);
+app.post("/api/build-app", requireAuth, aiLimiter, buildApp);
 app.get("/api/chat/history/latest", requireAuth, getLatestChatHistory);
 app.post("/auth/signup", authLimiter, signup);
 app.post("/auth/login", authLimiter, login);
