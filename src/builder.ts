@@ -14,7 +14,7 @@ export async function buildApp(req: Request, res: Response): Promise<void> {
   }
 
   const apiKey = process.env.AI_API_KEY;
-  const baseUrl = (process.env.AI_BASE_URL ?? "https://openrouter.ai/api/v1").replace(/\\/+$/, "");
+  const baseUrl = (process.env.AI_BASE_URL ?? "https://openrouter.ai/api/v1").replace(/\/+$/, "");
   const model = process.env.AI_MODEL ?? "openrouter/free";
   if (!apiKey) {
     res.status(503).json({ error: "Monarch AI is not configured yet. Add AI_API_KEY in the server's secret settings." });
@@ -43,7 +43,7 @@ export async function buildApp(req: Request, res: Response): Promise<void> {
           },
           {
             role: "user",
-            content: "Application name: " + parsed.data.name + "\\n\\nFULL PRODUCT SPECIFICATION (follow all requirements):\\n" + parsed.data.prompt
+            content: "Application name: " + parsed.data.name + "\n\nFULL PRODUCT SPECIFICATION (follow all requirements):\n" + parsed.data.prompt
           }
         ]
       }),
@@ -78,9 +78,9 @@ export async function buildApp(req: Request, res: Response): Promise<void> {
     const raw = choice.message.content;
     const answer = (typeof raw === "string" ? raw : raw.map((part) =>
       typeof part === "object" && part !== null && "text" in part && typeof part.text === "string" ? part.text : ""
-    ).join("")).trim().replace(/^\x60{3}(?:html)?\\s*/i, "").replace(/\\s*\x60{3}$/, "");
+    ).join("")).trim().replace(/^\x60{3}(?:html)?\s*/i, "").replace(/\s*\x60{3}$/, "");
 
-    if (choice.finish_reason === "length" || !/^<!doctype html[\\s>]/i.test(answer) || !/<\\/html>\\s*$/i.test(answer)) {
+    if (choice.finish_reason === "length" || !/^<!doctype html[\s>]/i.test(answer) || !/<\/html>\s*$/i.test(answer)) {
       res.status(502).json({ error: "The app draft was incomplete. Try again or split the specification into smaller sections; your original description is preserved." });
       return;
     }
